@@ -7,6 +7,7 @@
 struct BTDevice {
     std::string Name;
     std::string Address;
+    std::vector<std::string> Uuids;
 
     bool operator==(const BTDevice& other) const {
         return Address == other.Address;
@@ -41,16 +42,22 @@ int main() {
 
                     const auto nameIt = properties.find("Name");
                     const auto addressIt = properties.find("Address");
+                    const auto uuidsIt = properties.find("UUIDs");
 
                     BTDevice device;
                         device.Name = nameIt->second.get<std::string>();
                         device.Address = addressIt->second.get<std::string>();
+                        device.Uuids = uuidsIt->second.get<std::vector<std::string>>();
 
-                    if (auto it = std::ranges::find(devices.begin(), devices.end(), device); it != devices.end()) {
+                    // If device doesn't already exist, add it to the list and print out
+                    if (auto it = std::ranges::find(devices.begin(), devices.end(), device); it == devices.end()) {
                     devices.push_back(device);
 
                     std::cout << "Name: " << devices.back().Name
-                    << " | MAC: " << devices.back().Address << std::endl;
+                    << " | MAC: " << devices.back().Address
+                    << " | UUIDs: " << std::endl;
+                    for (const auto & uuid : devices.back().Uuids)
+                        std::cout << uuid << " | " << std::endl;
                     }
                 }
                 });
