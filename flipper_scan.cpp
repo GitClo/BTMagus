@@ -68,7 +68,7 @@ void scanStart() {
                         if (device.amIFlipper()) {
                             msg << "🐬 |";
                         }
-                        if (device.amISpoofedFlipper()) {
+                        else if (device.amISpoofedFlipper()) {
                             msg << " 🎭 |";
                         }
                         if (!device.amIFlipper() && !device.amISpoofedFlipper()) {
