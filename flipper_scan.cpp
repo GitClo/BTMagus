@@ -2,7 +2,7 @@
 
 #include "globals.h"
 
-// sudo dbus-monitor --system "sender='org.bluez'"
+// sudo BtMagus-monitor --system "sender='org.bluez'"
 
 const std::vector<std::string> FlipperMACPrefixes = {"80:e1:26", "80:e1:27", "0c:fa:22"};
 const std::string FlipperSpamUUID = "00001812-0000-1000-8000-00805f9b34fb";

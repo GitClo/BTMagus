@@ -124,7 +124,7 @@ depend:
 .PHONY : depend
 
 #=============================================================================
-# Target rules for targets named dbus
+# Target rules for targets named BtMagus
 
 # Build rule for target.
 dbus: cmake_check_build_system
