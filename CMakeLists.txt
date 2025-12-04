@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 4.0)
-project(dbus)
+project(BTMagus)
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_BUILD_TYPE Debug)
 
@@ -13,10 +13,10 @@ FetchContent_Declare(
 )
 FetchContent_MakeAvailable(cli)
 
-add_executable(dbus flipper_scan.cpp
+add_executable(btmagus flipper_scan.cpp
         flipper_scan.h
         main.cpp
         globals.h
         globals.cpp)
 
-target_link_libraries(dbus PRIVATE SDBusCpp::sdbus-c++ PRIVATE cli)
+target_link_libraries(btmagus PRIVATE SDBusCpp::sdbus-c++ PRIVATE cli)
