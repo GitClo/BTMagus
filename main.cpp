@@ -2,20 +2,111 @@
 #include "flipper_scan.h"
 #include <cli/cli.h>
 #include <cli/clifilesession.h>
+#include "globals.h"
 
 int main() {
-    auto rootMenu = std::make_unique< cli::Menu >( "BTMagus" );
+    auto flipperScanThread = std::make_shared<std::unique_ptr<std::thread>>();
+    auto outputThread = std::make_shared<std::unique_ptr<std::thread>>();
+    isFlipperScanRunning->store(false);
 
-    rootMenu -> Insert(
-            "scan",
-            [](std::ostream& out){ out << "" << "\n"; std::thread ThreadFlipperScan(scanStart); ThreadFlipperScan.join();},
-            "Scan for nearby flippers " );
+    auto rootMenu = std::make_unique<cli::Menu>("BTMagus");
+    auto flipperScanMenu = std::make_unique<cli::Menu>(
+        "flipper_scan",
+        "Scan for nearby flippers",
+        "flipper_scan");
 
-    cli::Cli cli( std::move(rootMenu) );
+    flipperScanMenu->Insert(
+        "run",
+        [flipperScanThread, outputThread](std::ostream& out) {
+
+            if (isFlipperScanRunning->load()) {
+                out << "Scan is already running!" << std::endl;
+                return;
+            }
+
+            {
+                std::lock_guard lock(cliOutputMutex);
+                cliOutput = &out;
+            }
+
+            out << "Scan is starting..." << std::endl;
+            isFlipperScanRunning->store(true);
+            *flipperScanThread = std::make_unique<std::thread>(scanStart);
+            (*flipperScanThread)->detach();
+
+            *outputThread = std::make_unique<std::thread>([]() {
+            while (isFlipperScanRunning->load()) {
+                std::string msg;
+                bool hasMessage = false;
+
+                {
+                    std::lock_guard qLock(queueMutex);
+                    if (!outputQueue.empty()) {
+                        msg = outputQueue.front();
+                        outputQueue.pop();
+                        hasMessage = true;
+                    }
+                }  // queueMutex released here
+
+                if (hasMessage) {
+                    std::lock_guard outLock(cliOutputMutex);
+                    if (cliOutput) {
+                        *cliOutput << msg;
+                        cliOutput->flush();
+                    }
+                } else {
+                    std::this_thread::sleep_for(std::chrono::milliseconds(50));
+                }
+            }
+        });
+            (*outputThread)->detach();
+        },
+        "Scan for nearby flippers");
+
+    flipperScanMenu->Insert(
+        "stop",
+        [](std::ostream& out) {
+            if (!isFlipperScanRunning->load()) {
+                out << "No scan is currently running.\n";
+                return;
+            }
+            out << "Stopping scan..." << std::endl;
+            isFlipperScanRunning->store(false);
+            std::this_thread::sleep_for(std::chrono::milliseconds(200));
+            {
+                std::lock_guard lock(cliOutputMutex);
+                cliOutput = nullptr;
+            }
+        },
+        "Stop the current scan");
+
+    flipperScanMenu->Insert(
+        "status",
+        [](std::ostream& out) {
+            if (isFlipperScanRunning->load()) {
+                out << "Scan is currently RUNNING" << std::endl;
+            } else {
+                out << "Scan is NOT running" << std::endl;
+            }
+        },
+        "Check scan status");
+
+    rootMenu->Insert(std::move(flipperScanMenu));
+
+    cli::Cli cli(std::move(rootMenu));
+
     // global exit action
-    cli.ExitAction( [](auto& out){ out << "Bye.\n"; } );
+    cli.ExitAction([](auto& out) {
+        if (isFlipperScanRunning->load()) {
+            out << "Stopping background scan...\n";
+            isFlipperScanRunning->store(false);
+            std::this_thread::sleep_for(std::chrono::milliseconds(500));
+        }
+        out << "Bye.\n";
+    });
 
     cli::CliFileSession input(cli);
     input.Start();
+
     return 0;
 }

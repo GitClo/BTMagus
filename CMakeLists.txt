@@ -15,6 +15,8 @@ FetchContent_MakeAvailable(cli)
 
 add_executable(dbus flipper_scan.cpp
         flipper_scan.h
-        main.cpp)
+        main.cpp
+        globals.h
+        globals.cpp)
 
 target_link_libraries(dbus PRIVATE SDBusCpp::sdbus-c++ PRIVATE cli)

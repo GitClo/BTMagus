@@ -1,5 +1,7 @@
 #include "flipper_scan.h"
 
+#include "globals.h"
+
 // sudo dbus-monitor --system "sender='org.bluez'"
 
 const std::vector<std::string> FlipperMACPrefixes = {"80:e1:26", "80:e1:27", "0c:fa:22"};
@@ -52,40 +54,61 @@ void scanStart() {
 
                         device.Uuids = uuidsIt->second.get<std::vector<std::string>>();
 
+                    // Message to be sent
+                    std::ostringstream msg;
+
                     // If device doesn't already exist and is not spam, add it to the list
                     if (auto it = std::ranges::find(devices.begin(),
                         devices.end(), device); it == devices.end() && !device.amISpam()) {
                         devices.push_back(device);
 
+                        std::lock_guard lock(queueMutex); // Before sending msg
+
                         // Print found devices
                         if (device.amIFlipper()) {
-                            std::cout << "🐬 |";
+                            msg << "🐬 |";
                         }
                         if (device.amISpoofedFlipper()) {
-                            std::cout << " 🎭 |";
+                            msg << " 🎭 |";
                         }
                         if (!device.amIFlipper() && !device.amISpoofedFlipper()) {
-                            std::cout << "ᛒ |";
+                            msg << "ᛒ |";
                         }
 
-                        std::cout << " Name: " << device.Name
+                        msg << " Name: " << device.Name
                         << " | MAC: " << device.Address
-                        << " | UUIDs: " << std::endl;
-                        for (const auto & uuid : device.Uuids)
-                            std::cout << uuid << " | " << std::endl;
+                        << " | UUIDs: " << '\n';
+                        for (const auto & uuid : device.Uuids) {
+                            msg << uuid << " | " << '\n';
+                        }
+                        outputQueue.push(msg.str());
                     }
                     else if (device.amISpam()) {
+                        std::lock_guard lock(queueMutex);
                         if (++spam_device_count % 20 == 0) {
-                            std::cout << "Bluetooth spam detected! Fake advertisements count: " << spam_device_count
-                                << std::endl;
-                        }
+                           msg << "Bluetooth spam detected! Fake advertisements count: " << spam_device_count
+                               << '\n';
+                           outputQueue.push(msg.str());
+                       }
                     }
                 }
             });
 
-        connection->enterEventLoop();
+        // Manual event loop, checking for stop signal
+        while (isFlipperScanRunning->load()) {
+            connection->processPendingEvent();
+            std::this_thread::sleep_for(std::chrono::milliseconds(10));
+        }
+
+        // Stop bluetooth discovery
+        adapterProxy->callMethod("StopDiscovery").onInterface(sdbus::InterfaceName{"org.bluez.Adapter1"}).dontExpectReply();
+
+      //connection->enterEventLoopAsync();
     }
     catch (const sdbus::Error& e) {
-        std::cerr << e.what() << std::endl;
+        std::ostringstream err_msg;
+        std::lock_guard lock(queueMutex);
+        err_msg << e.what() << '\n';
+        outputQueue.push(err_msg.str());
     }
 }
