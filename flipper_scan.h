@@ -1,14 +1,16 @@
 #ifndef BTMAGUS_FLIPPER_SCAN_H
 #define BTMAGUS_FLIPPER_SCAN_H
 
-#include <iostream>
-#include <map>
 #include <sdbus-c++/sdbus-c++.h>
 
-extern const std::vector<std::string> FlipperMACPrefixes;
-extern const std::string FlipperSpamUUID;
-extern const std::unordered_map<std::string, std::string> FlipperSpoofedUUID;
-extern uint32_t spam_device_count;
+namespace flipper_scan {
+    extern const std::vector<std::string> FlipperMACPrefixes;
+    extern const std::string FlipperSpamUUID;
+    extern const std::unordered_map<std::string, std::string> FlipperSpoofedUUID;
+    extern uint32_t spam_device_count;
+}
+
+using namespace flipper_scan;
 
 struct BTDevice {
     std::string Name;

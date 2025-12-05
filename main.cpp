@@ -91,6 +91,17 @@ int main() {
         },
         "Check scan status");
 
+    flipperScanMenu->Insert(
+        "adapter_path",
+        [](std::ostream& out) {
+            out << "Adapter path> ";
+            out.flush();
+            std::string a_path;
+            std::getline(std::cin, btAdapterPath);
+            setBtAdapterPath(a_path);
+        },
+        "Set bluetooth adapter path. Default is /org/bluez/hci0");
+
     rootMenu->Insert(std::move(flipperScanMenu));
 
     cli::Cli cli(std::move(rootMenu));

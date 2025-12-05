@@ -1,16 +1,18 @@
 #include "flipper_scan.h"
-
 #include "globals.h"
+using namespace flipper_scan;
 
 // sudo dbus-monitor --system "sender='org.bluez'"
 
-const std::vector<std::string> FlipperMACPrefixes = {"80:e1:26", "80:e1:27", "0c:fa:22"};
-const std::string FlipperSpamUUID = "00001812-0000-1000-8000-00805f9b34fb";
-const std::unordered_map<std::string, std::string> FlipperSpoofedUUID {
-            {"startswith", "0000308",},
-            {"endswith", "0000-1000-8000-00805f9b34fb"}
-};
-uint32_t spam_device_count = 0;
+namespace flipper_scan {
+    const std::vector<std::string> FlipperMACPrefixes = {"80:e1:26", "80:e1:27", "0c:fa:22"};
+    const std::string FlipperSpamUUID = "00001812-0000-1000-8000-00805f9b34fb";
+    const std::unordered_map<std::string, std::string> FlipperSpoofedUUID {
+                {"startswith", "0000308",},
+                {"endswith", "0000-1000-8000-00805f9b34fb"}
+    };
+    uint32_t spam_device_count = 0;
+}
 
 void scanStart() {
     static std::vector<BTDevice> devices;
@@ -20,7 +22,7 @@ void scanStart() {
 
         auto adapterProxy =
             sdbus::createProxy(*connection, sdbus::ServiceName{"org.bluez"},
-            sdbus::ObjectPath{"/org/bluez/hci0"});
+            sdbus::ObjectPath{getBtAdapterPath()});
 
         auto ObjectManagerProxy =
             sdbus::createProxy(*connection, sdbus::ServiceName{"org.bluez"},

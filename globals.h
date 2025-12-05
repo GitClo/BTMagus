@@ -6,6 +6,11 @@
 
 extern std::shared_ptr<std::atomic<bool>> isFlipperScanRunning;
 
+extern std::string btAdapterPath;
+extern std::mutex btAdapterPathMutex;
+extern std::string getBtAdapterPath();
+void setBtAdapterPath(const std::string& path);
+
 extern std::queue<std::string> outputQueue;
 extern std::mutex queueMutex;
 
