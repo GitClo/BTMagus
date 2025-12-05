@@ -1,5 +1,5 @@
-#ifndef DBUS_FLIPPER_SCAN_H
-#define DBUS_FLIPPER_SCAN_H
+#ifndef BTMAGUS_FLIPPER_SCAN_H
+#define BTMAGUS_FLIPPER_SCAN_H
 
 #include <iostream>
 #include <map>
@@ -69,4 +69,4 @@ struct BTDevice {
 
 void scanStart();
 
-#endif //DBUS_FLIPPER_SCAN_H
+#endif //BTMAGUS_FLIPPER_SCAN_H

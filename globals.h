@@ -1,5 +1,5 @@
-#ifndef DBUS_GLOBALS_H
-#define DBUS_GLOBALS_H
+#ifndef BTMAGUS_GLOBALS_H
+#define BTMAGUS_GLOBALS_H
 
 #include "memory"
 #include <queue>
@@ -12,4 +12,4 @@ extern std::mutex queueMutex;
 extern std::mutex cliOutputMutex;
 extern std::ostream * cliOutput;
 
-#endif //DBUS_GLOBALS_H
+#endif //BTMAGUS_GLOBALS_H
