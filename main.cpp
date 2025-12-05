@@ -51,7 +51,7 @@ int main() {
                 if (hasMessage) {
                     std::lock_guard outLock(cliOutputMutex);
                     if (cliOutput) {
-                        *cliOutput << msg;
+                        *cliOutput << msg << "flipper_scan> ";
                         cliOutput->flush();
                     }
                 } else {

@@ -5,15 +5,12 @@ set(CMAKE_BUILD_TYPE Debug)
 
 find_package(sdbus-c++ REQUIRED)
 
-include(FetchContent)
-FetchContent_Declare(
-        cli
-        GIT_REPOSITORY https://github.com/daniele77/cli.git
-        GIT_TAG v2.2.0
-)
-FetchContent_MakeAvailable(cli)
+add_library(cli INTERFACE)
+target_include_directories(cli INTERFACE
+        ${CMAKE_SOURCE_DIR}/external/cli/include)
 
-add_executable(btmagus flipper_scan.cpp
+add_executable(btmagus
+        flipper_scan.cpp
         flipper_scan.h
         main.cpp
         globals.h
