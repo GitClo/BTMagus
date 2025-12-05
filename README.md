@@ -46,9 +46,3 @@ Communicates with the BlueZ Bluetooth daemon over DBus for low-level BLE interac
 ## 📦 Installation & Usage
 (Coming soon — documentation will expand as features stabilize.)
 
----
-
-## 📄 Release Notes
-Latest release: **v0.1.0-alpha**  
-Full changelog:  
-https://github.com/GitClo/BTMagus/commits/v0.1.0-alpha
