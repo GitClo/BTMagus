@@ -5,6 +5,8 @@ using namespace flipper_scan;
 // sudo dbus-monitor --system "sender='org.bluez'"
 
 namespace flipper_scan {
+    std::vector<BTDevice> BTDevices;
+
     const std::vector<std::string> FlipperMACPrefixes = {"80:e1:26", "80:e1:27", "0c:fa:22"};
     const std::string FlipperSpamUUID = "00001812-0000-1000-8000-00805f9b34fb";
     const std::unordered_map<std::string, std::string> FlipperSpoofedUUID {
@@ -15,7 +17,6 @@ namespace flipper_scan {
 }
 
 void scanStart() {
-    static std::vector<BTDevice> devices;
 
     try {
         auto connection = sdbus::createSystemBusConnection();
@@ -56,41 +57,46 @@ void scanStart() {
 
                         device.Uuids = uuidsIt->second.get<std::vector<std::string>>();
 
-                    // Message to be sent
-                    std::ostringstream msg;
 
-                    // If device doesn't already exist and is not spam, add it to the list
-                    if (auto it = std::ranges::find(devices.begin(),
-                        devices.end(), device); it == devices.end() && !device.amISpam()) {
-                        devices.push_back(device);
+                    {
+                        std::lock_guard lock_btdevices(BTDevicesMutex);
 
-                        std::lock_guard lock(queueMutex); // Before sending msg
+                        // Message to be sent
+                        std::ostringstream msg;
 
-                        // Print found devices
-                        if (device.amIFlipper()) {
-                            msg << "🐬 |";
-                        }
-                        else if (device.amISpoofedFlipper()) {
-                            msg << " 🎭 |";
-                        }
-                        if (!device.amIFlipper() && !device.amISpoofedFlipper()) {
-                            msg << "ᛒ |";
-                        }
+                        // If device doesn't already exist and is not spam, add it to the list
+                       if (auto it = std::ranges::find(BTDevices.begin(),
+                           BTDevices.end(), device); it == BTDevices.end() && !device.amISpam()) {
+                           BTDevices.push_back(device);
 
-                        msg << " Name: " << device.Name
-                        << " | MAC: " << device.Address
-                        << " | UUIDs: " << '\n';
-                        for (const auto & uuid : device.Uuids) {
-                            msg << uuid << " | " << '\n';
-                        }
-                        outputQueue.push(msg.str());
-                    }
-                    else if (device.amISpam()) {
-                        std::lock_guard lock(queueMutex);
-                        if (++spam_device_count % 20 == 0) {
-                           msg << "Bluetooth spam detected! Fake advertisements count: " << spam_device_count
-                               << '\n';
+                           std::lock_guard lock_queue(queueMutex); // Before sending msg
+
+                           // Print found devices
+                           if (device.amIFlipper()) {
+                               msg << "🐬 |";
+                           }
+                           else if (device.amISpoofedFlipper()) {
+                               msg << " 🎭 |";
+                           }
+                           if (!device.amIFlipper() && !device.amISpoofedFlipper()) {
+                               msg << "ᛒ |";
+                           }
+
+                           msg << " Name: " << device.Name
+                           << " | MAC: " << device.Address
+                           << " | UUIDs: " << '\n';
+                           for (const auto & uuid : device.Uuids) {
+                               msg << uuid << " | " << '\n';
+                           }
                            outputQueue.push(msg.str());
+                       }
+                       else if (device.amISpam()) {
+                           std::lock_guard lock(queueMutex);
+                           if (++spam_device_count % 20 == 0) {
+                              msg << "Bluetooth spam detected! Fake advertisements count: " << spam_device_count
+                                  << '\n';
+                              outputQueue.push(msg.str());
+                          }
                        }
                     }
                 }

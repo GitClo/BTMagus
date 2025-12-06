@@ -14,6 +14,8 @@ void setBtAdapterPath(const std::string& path);
 extern std::queue<std::string> outputQueue;
 extern std::mutex queueMutex;
 
+extern std::mutex BTDevicesMutex;
+
 extern std::mutex cliOutputMutex;
 extern std::ostream * cliOutput;
 
