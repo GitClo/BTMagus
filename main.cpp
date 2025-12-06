@@ -51,7 +51,7 @@ int main() {
                 if (hasMessage) {
                     std::lock_guard outLock(cliOutputMutex);
                     if (cliOutput) {
-                        *cliOutput << msg << "flipper_scan> ";
+                        *cliOutput << '\n' << msg << "flipper_scan> ";
                         cliOutput->flush();
                     }
                 } else {
@@ -90,6 +90,50 @@ int main() {
             }
         },
         "Check scan status");
+
+    flipperScanMenu->Insert(
+        "show",
+        [](std::ostream& out) {
+            {
+                std::lock_guard lock_output(cliOutputMutex);
+                std::lock_guard lock_btdevices(BTDevicesMutex);
+
+                if (!BTDevices.empty()) {
+                    bool has_flipper = false;
+                    for (auto& device : BTDevices) {
+                        if (device.amIFlipper()) {
+                            has_flipper = true;
+                            out << "------------------------------" << '\n';
+                            out << "🐬 | " << device.Name << " | " << device.Address << " |" << '\n';
+                            out << "UUIDS:" << '\n';
+                            for (const auto & uuid : device.Uuids) {
+                                   out << uuid << " | " << '\n';
+                            }
+                            out << "------------------------------" << '\n';
+                            out.flush();
+                        }
+                        else if (device.amISpoofedFlipper()) {
+                            has_flipper = true;
+                            out << "------------------------------" << '\n';
+                            out << "🎭 | " << device.Name << " | " << device.Address << " |" << '\n';
+                            out << "UUIDS:" << '\n';
+                            for (const auto & uuid : device.Uuids) {
+                                   out << uuid << " | " << '\n';
+                            }
+                            out << "------------------------------" << '\n';
+                            out.flush();
+                        }
+                    }
+                    if (!has_flipper) {
+                            out << "No flippers have been detected yet." << std::endl;
+                    }
+                }
+                else {
+                    out << "You haven't scanned for bluetooth devices yet!" << std::endl;
+                }
+            }
+        },
+        "Show a list of detected flippers");
 
     flipperScanMenu->Insert(
         "adapter_path",

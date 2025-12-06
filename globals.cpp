@@ -19,5 +19,7 @@ void setBtAdapterPath(const std::string& path) {
 std::queue<std::string> outputQueue;
 std::mutex queueMutex;
 
+std::mutex BTDevicesMutex;
+
 std::mutex cliOutputMutex;
 std::ostream * cliOutput = nullptr;
