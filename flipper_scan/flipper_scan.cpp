@@ -1,5 +1,5 @@
 #include "flipper_scan.h"
-#include "globals.h"
+#include "../globals.h"
 using namespace flipper_scan;
 
 // sudo dbus-monitor --system "sender='org.bluez'"

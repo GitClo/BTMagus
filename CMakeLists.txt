@@ -10,10 +10,12 @@ target_include_directories(cli INTERFACE
         ${CMAKE_SOURCE_DIR}/external/cli/include)
 
 add_executable(btmagus
-        flipper_scan.cpp
-        flipper_scan.h
+        flipper_scan/flipper_scan.cpp
+        flipper_scan/flipper_scan.h
         main.cpp
         globals.h
-        globals.cpp)
+        globals.cpp
+        ble_spam/ble_spam.h
+        ble_spam/ble_spam.cpp)
 
 target_link_libraries(btmagus PRIVATE SDBusCpp::sdbus-c++ PRIVATE cli)

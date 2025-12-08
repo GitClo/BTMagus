@@ -1,5 +1,5 @@
 #include <thread>
-#include "flipper_scan.h"
+#include "flipper_scan/flipper_scan.h"
 #include <cli/cli.h>
 #include <cli/clifilesession.h>
 #include "globals.h"
