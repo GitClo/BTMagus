@@ -33,7 +33,7 @@ public:
         const std::map<std::string, std::string> &genuineWatchIds)
         : genuineBudsIds(genuineBudsIds), genuineWatchIds(genuineWatchIds) {};
 
-    // Returns full payload for EasySetup Buds (prefix + device ID)
+    // Returns full payload for EasySetup Buds (prefix + device ID + suffix)
     std::string getGenuineBudsAdvertisement() const {
         const std::string prefix = "42098102141503210109";
         const std::string suffix = "063C948E00000000C700";
