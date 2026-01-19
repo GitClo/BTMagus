@@ -4,6 +4,8 @@
 #include <string>
 #include <random>
 
+#include "../MessageDispatcher.h"
+
 class advertisementGenerator {
     const std::map<std::string, std::string> genuineBudsIds;
     const std::map<std::string, std::string> genuineWatchIds;
@@ -29,6 +31,8 @@ class advertisementGenerator {
 
 
 public:
+    advertisementGenerator() = default;
+
     explicit advertisementGenerator(const std::map<std::string, std::string> &genuineBudsIds,
         const std::map<std::string, std::string> &genuineWatchIds)
         : genuineBudsIds(genuineBudsIds), genuineWatchIds(genuineWatchIds) {};
@@ -46,4 +50,6 @@ public:
         return hexToBytes(prefix) + hexToBytes(pickRandomKey(genuineWatchIds));
     }
 };
+
+void startBleSpam(MessageDispatcher &msgDispatcher);
 #endif //BTMAGUS_BLE_SPAM_H

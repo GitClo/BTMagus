@@ -16,6 +16,8 @@ add_executable(btmagus
         globals.h
         globals.cpp
         ble_spam/ble_spam.h
-        ble_spam/ble_spam.cpp)
+        ble_spam/ble_spam.cpp
+        MessageDispatcher.h
+        message.h)
 
 target_link_libraries(btmagus PRIVATE SDBusCpp::sdbus-c++ PRIVATE cli)

@@ -1,5 +1,10 @@
 #include "ble_spam.h"
 
+#include <chrono>
+#include <thread>
+
+#include "../globals.h"
+
 std::map<std::string, std::string> genuineBudsIds = {
         {"EE7A0C", "Fallback Buds"},
         {"9D1700", "Fallback Dots"},
@@ -51,3 +56,11 @@ const std::map<std::string, std::string> genuineWatchIds = {
         {"1E", "Black Watch6 Classic 43m"},
         {"20", "Green Watch6 Classic 43m"},
     };
+
+void startBleSpam(MessageDispatcher& msgDispatcher) {
+    advertisementGenerator ag;
+    while (isBleSpamRunning->load()) {
+        msgDispatcher.dispatchMessage(Message(Message::BleSpam, ag.getGenuineBudsAdvertisement()));
+        std::this_thread::sleep_for(std::chrono::milliseconds(1000));
+    }
+}
