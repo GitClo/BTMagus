@@ -1,11 +1,11 @@
 #include <thread>
 #include "flipper_scan/flipper_scan.h"
 #include "ble_spam/ble_spam.h"
-#include "MessageDispatcher.h"
+#include "core/MessageDispatcher.h"
 
 #include <cli/cli.h>
 #include <cli/clifilesession.h>
-#include "globals.h"
+#include "core/globals.h"
 
 int main() {
     isFlipperScanRunning->store(false);

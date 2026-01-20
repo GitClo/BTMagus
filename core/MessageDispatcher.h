@@ -7,7 +7,7 @@
 #include <ostream>
 #include <chrono>
 
-#include "globals.h"
+#include "../core/globals.h"
 #include "message.h"
 
 class MessageDispatcher {

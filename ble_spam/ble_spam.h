@@ -4,7 +4,7 @@
 #include <string>
 #include <random>
 
-#include "../MessageDispatcher.h"
+#include "../core/MessageDispatcher.h"
 
 class advertisementGenerator {
     const std::map<std::string, std::string> genuineBudsIds;

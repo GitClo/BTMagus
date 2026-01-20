@@ -2,9 +2,9 @@
 #define BTMAGUS_FLIPPER_SCAN_H
 
 #include <sdbus-c++/sdbus-c++.h>
-#include "../globals.h"
-#include "../message.h"
-#include "../MessageDispatcher.h"
+#include "../core/globals.h"
+#include "../core/message.h"
+#include "../core/MessageDispatcher.h"
 
 namespace flipper_scan {
     extern const std::vector<std::string> FlipperMACPrefixes;

@@ -3,7 +3,7 @@
 #include <chrono>
 #include <thread>
 
-#include "../globals.h"
+#include "../core/globals.h"
 
 std::map<std::string, std::string> genuineBudsIds = {
         {"EE7A0C", "Fallback Buds"},
