@@ -38,16 +38,18 @@ public:
         : genuineBudsIds(genuineBudsIds), genuineWatchIds(genuineWatchIds) {};
 
     // Returns full payload for EasySetup Buds (prefix + device ID + suffix)
-    std::string getGenuineBudsAdvertisement() const {
+    std::vector<uint8_t> getGenuineBudsAdvertisement() const {
         const std::string prefix = "42098102141503210109";
         const std::string suffix = "063C948E00000000C700";
-        return hexToBytes(prefix) + hexToBytes(pickRandomKey(genuineBudsIds)) + hexToBytes(suffix);
+        std::string payload = hexToBytes(prefix) + hexToBytes(pickRandomKey(genuineBudsIds)) + hexToBytes(suffix);
+        return {std::vector<uint8_t>(payload.begin(), payload.end())};
     }
 
     // Returns full payload for EasySetup Watch (prefix + device ID)
-    std::string getGenuineWatchAdvertisement() const {
+    std::vector<uint8_t> getGenuineWatchAdvertisement() const {
         const std::string prefix = "010002000101FF000043"; // EasySetup Watch prefix
-        return hexToBytes(prefix) + hexToBytes(pickRandomKey(genuineWatchIds));
+        std::string payload = hexToBytes(prefix) + hexToBytes(pickRandomKey(genuineWatchIds));
+        return {std::vector<uint8_t>(payload.begin(), payload.end())};
     }
 };
 

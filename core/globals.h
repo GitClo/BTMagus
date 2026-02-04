@@ -7,10 +7,10 @@ extern std::shared_ptr<std::atomic<bool>> isFlipperScanRunning;
 extern std::shared_ptr<std::atomic<bool>> isBleSpamRunning;
 extern std::shared_ptr<std::atomic<bool>> isMessageDispatcherRunning;
 
-extern std::string btAdapterPath;
+extern std::string adapterObjectPath;
 extern std::mutex btAdapterPathMutex;
-extern std::string getBtAdapterPath();
-void setBtAdapterPath(const std::string& path);
+extern std::string getAdapterObjectPath();
+void setAdapterObjectPath(const std::string& path);
 
 extern std::mutex BTDevicesMutex;
 

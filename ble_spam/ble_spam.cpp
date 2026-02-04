@@ -2,6 +2,8 @@
 
 #include <chrono>
 #include <thread>
+#include <sdbus-c++/AdaptorInterfaces.h>
+#include <sdbus-c++/IConnection.h>
 
 #include "../core/globals.h"
 
@@ -58,9 +60,74 @@ const std::map<std::string, std::string> genuineWatchIds = {
     };
 
 void startBleSpam(MessageDispatcher& msgDispatcher) {
-    advertisementGenerator ag;
-    while (isBleSpamRunning->load()) {
-        msgDispatcher.dispatchMessage(Message(Message::BleSpam, ag.getGenuineBudsAdvertisement()));
-        std::this_thread::sleep_for(std::chrono::milliseconds(1000));
+    try {
+        // Create connection to bluez LEAdvertisingManager1
+        sdbus::ServiceName serviceName{"org.btmagus.blespam"};
+        auto connection = sdbus::createSystemBusConnection(serviceName);
+
+        // Create my object
+        sdbus::ObjectPath myAdvPath{"/org/btmagus/blespam"};
+        auto myAdvObject = sdbus::createObject(*connection, std::move(myAdvPath));
+
+        sdbus::InterfaceName interfaceName{"org.bluez.LEAdvertisement1"};
+
+        advertisementGenerator generator(genuineBudsIds, genuineWatchIds);
+
+        // 1. Add the VTable
+        myAdvObject->addVTable(
+
+            // METHOD: Release (Required)
+            sdbus::registerMethod("Release")
+                 .implementedAs([](){
+                     // Do nothing. BlueZ just told us we are stopped.
+                     // Returning void automatically sends the D-Bus reply.
+                 }),
+
+            // PROPERTY: Type (Required)
+            sdbus::registerProperty("Type")
+                 .withGetter([](){ return "peripheral"; })
+                 .withUpdateBehavior(sdbus::Flags::EMITS_CHANGE_SIGNAL),
+
+            // PROPERTY: ServiceUUIDs (Required)
+            sdbus::registerProperty("ServiceUUIDs")
+                 .withGetter([](){ return std::vector<std::string>{}; })
+                 .withUpdateBehavior(sdbus::Flags::EMITS_CHANGE_SIGNAL),
+
+            // PROPERTY: ManufacturerData (Spam Payload)
+            sdbus::registerProperty("ManufacturerData")
+                 .withGetter([&generator, &msgDispatcher](){
+                     std::map<uint16_t, std::vector<uint8_t>> manufData;
+
+                     std::vector<uint8_t> payload = generator.getGenuineWatchAdvertisement();
+
+                     manufData[0x0075] = payload;
+
+                     std::string payload_str(payload.begin(), payload.end());
+                     msgDispatcher.dispatchMessage(Message(Message::BleSpam,
+                         std::format("Manuf data payload: {}", payload_str)));
+
+                     return manufData;
+                 })
+                 .withUpdateBehavior(sdbus::Flags::EMITS_CHANGE_SIGNAL)
+
+        ).forInterface(interfaceName);
+
+        auto managerProxy = sdbus::createProxy(*connection, sdbus::ServiceName{"org.bluez"},
+            sdbus::ObjectPath{getAdapterObjectPath()});
+
+        managerProxy->callMethod("RegisterAdvertisement")
+                    .onInterface("org.bluez.LEAdvertisingManager1")
+                    .withArguments(myAdvPath, std::map<std::string, sdbus::Variant>{});
+
+        advertisementGenerator ag;
+        while (isBleSpamRunning->load()) {
+            std::this_thread::sleep_for(std::chrono::milliseconds(100));
+        }
+        // Stoping thread here
+    }
+    catch(const sdbus::Error& e) {
+        Message err_msg(Message::BleSpam, "[Error - BleSpam]: ");
+        err_msg << e.what() << '\n';
+        msgDispatcher.dispatchMessage(err_msg);
     }
 }

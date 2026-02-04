@@ -5,17 +5,17 @@ auto isFlipperScanRunning = std::make_shared<std::atomic<bool>>(false);
 auto isBleSpamRunning = std::make_shared<std::atomic<bool>>(false);
 auto isMessageDispatcherRunning = std::make_shared<std::atomic<bool>>(false);
 
-std::string btAdapterPath{"/org/bluez/hci0"};
-std::mutex btAdapterMutex;
+std::string adapterObjectPath{"/org/bluez/hci0"};
+std::mutex adapterObjectPathMutex;
 
-std::string getBtAdapterPath() {
-    std::lock_guard<std::mutex> lock(btAdapterMutex);
-    return btAdapterPath;
+std::string getAdapterObjectPath() {
+    std::lock_guard<std::mutex> lock(adapterObjectPathMutex);
+    return adapterObjectPath;
 }
 
-void setBtAdapterPath(const std::string& path) {
-    std::lock_guard<std::mutex> lock(btAdapterMutex);
-    btAdapterPath = path;
+void setAdapterObjectPath(const std::string& path) {
+    std::lock_guard<std::mutex> lock(adapterObjectPathMutex);
+    adapterObjectPath = path;
 }
 
 std::mutex BTDevicesMutex;

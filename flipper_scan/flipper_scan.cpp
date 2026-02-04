@@ -23,7 +23,7 @@ void scanStart(MessageDispatcher &msgDispatcher) {
 
         auto adapterProxy =
             sdbus::createProxy(*connection, sdbus::ServiceName{"org.bluez"},
-            sdbus::ObjectPath{getBtAdapterPath()});
+            sdbus::ObjectPath{getAdapterObjectPath()});
 
         auto ObjectManagerProxy =
             sdbus::createProxy(*connection, sdbus::ServiceName{"org.bluez"},
@@ -110,7 +110,7 @@ void scanStart(MessageDispatcher &msgDispatcher) {
 
     }
     catch (const sdbus::Error& e) {
-        Message err_msg(Message::FlipperScan, "");
+        Message err_msg(Message::FlipperScan, "Error - FlipperScan]: ");
         err_msg << e.what() << '\n';
         msgDispatcher.dispatchMessage(err_msg);
     }
