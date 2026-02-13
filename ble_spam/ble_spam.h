@@ -3,6 +3,7 @@
 #include <map>
 #include <string>
 #include <random>
+#include <stop_token>
 
 #include "../core/MessageDispatcher.h"
 
