@@ -100,7 +100,7 @@ void scanStart(MessageDispatcher &msgDispatcher) {
             });
 
         // Manual event loop, checking for stop signal
-        while (isFlipperScanRunning->load()) {
+        while (isFlipperScanRunning.load()) {
             connection->processPendingEvent();
             std::this_thread::sleep_for(std::chrono::milliseconds(10));
         }

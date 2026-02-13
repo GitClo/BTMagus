@@ -174,7 +174,7 @@ void startBleSpam(MessageDispatcher& msgDispatcher) {
                     });
 
         // Wait for registration to complete while processing events
-        while (!registered.load() && isBleSpamRunning->load()) {
+        while (!registered.load() && isBleSpamRunning.load()) {
             connection->processPendingEvent();
             std::this_thread::sleep_for(std::chrono::milliseconds(10));
         }
@@ -197,7 +197,7 @@ void startBleSpam(MessageDispatcher& msgDispatcher) {
         });
 
         // Process events while running
-        while (isBleSpamRunning->load()) {
+        while (isBleSpamRunning.load()) {
             connection->processPendingEvent();
             std::this_thread::sleep_for(std::chrono::milliseconds(10));
         }

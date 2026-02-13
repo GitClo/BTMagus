@@ -27,7 +27,7 @@ public:
         }
 
         dispatcherThread = std::thread([this]() {
-            while (isMessageDispatcherRunning->load()) {
+            while (isMessageDispatcherRunning.load()) {
                 bool hasMessage = false;
                 Message msg(Message::Source::FlipperScan, "");
 

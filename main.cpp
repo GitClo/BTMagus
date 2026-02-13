@@ -8,9 +8,9 @@
 #include "core/globals.h"
 
 int main() {
-    isFlipperScanRunning->store(false);
-    isBleSpamRunning->store(false);
-    isMessageDispatcherRunning->store(true);
+    isFlipperScanRunning.store(false);
+    isBleSpamRunning.store(false);
+    isMessageDispatcherRunning.store(true);
 
     // ---- Dispatcher (ONE output authority)
     MessageDispatcher msgDispatcher(std::cout);
@@ -27,13 +27,13 @@ int main() {
     flipperScanMenu->Insert(
         "run",
         [&msgDispatcher](std::ostream& out) {
-            if (isFlipperScanRunning->load()) {
+            if (isFlipperScanRunning.load()) {
                 out << "Scan is already running!\n";
                 return;
             }
 
             out << "Scan is starting...\n";
-            isFlipperScanRunning->store(true);
+            isFlipperScanRunning.store(true);
             std::thread(scanStart, std::ref(msgDispatcher)).detach();
         },
         "Scan for nearby flippers"
@@ -42,13 +42,13 @@ int main() {
     flipperScanMenu->Insert(
         "stop",
         [](std::ostream& out) {
-            if (!isFlipperScanRunning->load()) {
+            if (!isFlipperScanRunning.load()) {
                 out << "No scan is currently running.\n";
                 return;
             }
 
             out << "Stopping scan...\n";
-            isFlipperScanRunning->store(false);
+            isFlipperScanRunning.store(false);
         },
         "Stop the current scan"
     );
@@ -56,7 +56,7 @@ int main() {
     flipperScanMenu->Insert(
         "status",
         [](std::ostream& out) {
-            out << (isFlipperScanRunning->load()
+            out << (isFlipperScanRunning.load()
                 ? "Scan is currently RUNNING\n"
                 : "Scan is NOT running\n");
         },
@@ -103,13 +103,13 @@ int main() {
     bleSpamMenu->Insert(
         "run",
         [&msgDispatcher](std::ostream& out) {
-            if (isBleSpamRunning->load()) {
+            if (isBleSpamRunning.load()) {
                 out << "BLE spam already running.\n";
                 return;
             }
 
             out << "Running BLE spam...\n";
-            isBleSpamRunning->store(true);
+            isBleSpamRunning.store(true);
             std::thread(startBleSpam, std::ref(msgDispatcher)).detach();
         },
         "Run BLE Spam"
@@ -118,13 +118,13 @@ int main() {
     bleSpamMenu->Insert(
         "stop",
         [](std::ostream& out) {
-            if (!isBleSpamRunning->load()) {
+            if (!isBleSpamRunning.load()) {
                 out << "BLE spam is not currently running.\n";
                 return;
             }
 
             out << "Stopping BLE spam...\n";
-            isBleSpamRunning->store(false);
+            isBleSpamRunning.store(false);
         },
         "Stop BLE spam"
     );
@@ -137,9 +137,9 @@ int main() {
 
     // ================== EXIT ==================
     cli.ExitAction([](auto& out) {
-        isFlipperScanRunning->store(false);
-        isBleSpamRunning->store(false);
-        isMessageDispatcherRunning->store(false);
+        isFlipperScanRunning.store(false);
+        isBleSpamRunning.store(false);
+        isMessageDispatcherRunning.store(false);
         out << "Bye.\n";
     });
 

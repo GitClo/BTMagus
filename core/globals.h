@@ -3,9 +3,9 @@
 
 #include "memory"
 
-extern std::shared_ptr<std::atomic<bool>> isFlipperScanRunning;
-extern std::shared_ptr<std::atomic<bool>> isBleSpamRunning;
-extern std::shared_ptr<std::atomic<bool>> isMessageDispatcherRunning;
+extern std::atomic<bool> isFlipperScanRunning;
+extern std::atomic<bool> isBleSpamRunning;
+extern std::atomic<bool> isMessageDispatcherRunning;
 
 extern std::string adapterObjectPath;
 extern std::mutex btAdapterPathMutex;

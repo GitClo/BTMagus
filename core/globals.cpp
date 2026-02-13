@@ -1,9 +1,9 @@
 #include "globals.h"
 #include <atomic>
 
-auto isFlipperScanRunning = std::make_shared<std::atomic<bool>>(false);
-auto isBleSpamRunning = std::make_shared<std::atomic<bool>>(false);
-auto isMessageDispatcherRunning = std::make_shared<std::atomic<bool>>(false);
+std::atomic<bool> isFlipperScanRunning = std::atomic<bool>(false);
+std::atomic<bool> isBleSpamRunning = std::atomic<bool>(false);
+std::atomic<bool> isMessageDispatcherRunning = std::atomic<bool>(false);
 
 std::string adapterObjectPath{"/org/bluez/hci0"};
 std::mutex adapterObjectPathMutex;
