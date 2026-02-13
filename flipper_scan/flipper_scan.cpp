@@ -1,5 +1,5 @@
 #include "flipper_scan.h"
-#include "globals.h"
+
 using namespace flipper_scan;
 
 // sudo dbus-monitor --system "sender='org.bluez'"
@@ -16,14 +16,14 @@ namespace flipper_scan {
     uint32_t spam_device_count = 0;
 }
 
-void scanStart() {
+void scanStart(MessageDispatcher &msgDispatcher) {
 
     try {
         auto connection = sdbus::createSystemBusConnection();
 
         auto adapterProxy =
             sdbus::createProxy(*connection, sdbus::ServiceName{"org.bluez"},
-            sdbus::ObjectPath{getBtAdapterPath()});
+            sdbus::ObjectPath{getAdapterObjectPath()});
 
         auto ObjectManagerProxy =
             sdbus::createProxy(*connection, sdbus::ServiceName{"org.bluez"},
@@ -33,8 +33,8 @@ void scanStart() {
 
         ObjectManagerProxy->uponSignal(sdbus::SignalName{"InterfacesAdded"}).onInterface(
             sdbus::InterfaceName{"org.freedesktop.DBus.ObjectManager"}).call(
-            [](sdbus::ObjectPath const & devicePath,
-                 std::map<std::string, std::map<std::string, sdbus::Variant>> const & interfaces) {
+            [&msgDispatcher](sdbus::ObjectPath const & devicePath,
+                             std::map<std::string, std::map<std::string, sdbus::Variant>> const & interfaces) {
 
                 if (const auto it = interfaces.find("org.bluez.Device1"); it != interfaces.end()) {
 
@@ -62,14 +62,12 @@ void scanStart() {
                         std::lock_guard lock_btdevices(BTDevicesMutex);
 
                         // Message to be sent
-                        std::ostringstream msg;
+                        Message msg(Message::FlipperScan, "");
 
                         // If device doesn't already exist and is not spam, add it to the list
                        if (auto it = std::ranges::find(BTDevices.begin(),
                            BTDevices.end(), device); it == BTDevices.end() && !device.amISpam()) {
                            BTDevices.push_back(device);
-
-                           std::lock_guard lock_queue(queueMutex); // Before sending msg
 
                            // Print found devices
                            if (device.amIFlipper()) {
@@ -88,14 +86,13 @@ void scanStart() {
                            for (const auto & uuid : device.Uuids) {
                                msg << uuid << " | " << '\n';
                            }
-                           outputQueue.push(msg.str());
+                           msgDispatcher.dispatchMessage(msg);
                        }
                        else if (device.amISpam()) {
-                           std::lock_guard lock(queueMutex);
                            if (++spam_device_count % 20 == 0) {
                               msg << "Bluetooth spam detected! Fake advertisements count: " << spam_device_count
                                   << '\n';
-                              outputQueue.push(msg.str());
+                               msgDispatcher.dispatchMessage(msg);
                           }
                        }
                     }
@@ -111,12 +108,10 @@ void scanStart() {
         // Stop bluetooth discovery
         adapterProxy->callMethod("StopDiscovery").onInterface(sdbus::InterfaceName{"org.bluez.Adapter1"}).dontExpectReply();
 
-      //connection->enterEventLoopAsync();
     }
     catch (const sdbus::Error& e) {
-        std::ostringstream err_msg;
-        std::lock_guard lock(queueMutex);
+        Message err_msg(Message::FlipperScan, "Error - FlipperScan]: ");
         err_msg << e.what() << '\n';
-        outputQueue.push(err_msg.str());
+        msgDispatcher.dispatchMessage(err_msg);
     }
 }
