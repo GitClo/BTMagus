@@ -185,7 +185,7 @@ void startBleSpam(MessageDispatcher& msgDispatcher) {
 
         std::jthread pulser([&](std::stop_token const &stoken){
             while(!stoken.stop_requested()){
-                std::this_thread::sleep_for(std::chrono::milliseconds(1500));
+                std::this_thread::sleep_for(std::chrono::milliseconds(200));
                 if (stoken.stop_requested()) break;
 
                 //Emitting property change signal...
