@@ -1,5 +1,7 @@
 #include "globals.h"
 #include <atomic>
+#include <memory>
+#include <mutex>
 
 std::atomic<bool> isFlipperScanRunning = std::atomic<bool>(false);
 std::atomic<bool> isBleSpamRunning = std::atomic<bool>(false);

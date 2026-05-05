@@ -1,7 +1,8 @@
 #ifndef BTMAGUS_GLOBALS_H
 #define BTMAGUS_GLOBALS_H
 
-#include "memory"
+#include <memory>
+#include <mutex>
 
 extern std::atomic<bool> isFlipperScanRunning;
 extern std::atomic<bool> isBleSpamRunning;

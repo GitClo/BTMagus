@@ -6,6 +6,7 @@
 class Message {
     public:
         enum Source {
+            System,
             FlipperScan,
             BleSpam
         };

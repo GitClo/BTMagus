@@ -5,6 +5,7 @@
 #include "../core/globals.h"
 #include "../core/message.h"
 #include "../core/MessageDispatcher.h"
+#include <ranges>
 
 namespace flipper_scan {
     extern const std::vector<std::string> FlipperMACPrefixes;
